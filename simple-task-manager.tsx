@@ -1,283 +1,487 @@
-import React, { useState, useEffect } from 'react';
-
-// アイコンコンポーネント
-const PlusIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="20,6 9,17 4,12"></polyline>
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="3,6 5,6 21,6"></polyline>
-    <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
-  </svg>
-);
-
-const SmartphoneIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-    <line x1="12" y1="18" x2="12.01" y2="18"></line>
-  </svg>
-);
-
-export default function TaskManager() {
-  const [tasks, setTasks] = useState([
-    { id: 1, text: 'PWAアプリを試してみる', completed: false },
-    { id: 2, text: 'ホーム画面に追加する', completed: false }
-  ]);
-  const [newTask, setNewTask] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [isOnline, setIsOnline] = useState(true);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タスク管理アプリ</title>
     
-    if (typeof window !== 'undefined') {
-      setIsOnline(navigator.onLine);
-      window.addEventListener('online', handleOnline);
-      window.addEventListener('offline', handleOffline);
-      
-      return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-      };
-    }
-  }, []);
-
-  const addTask = () => {
-    if (newTask.trim()) {
-      const task = {
-        id: Date.now(),
-        text: newTask.trim(),
-        completed: false
-      };
-      setTasks([...tasks, task]);
-      setNewTask('');
-      
-      // 触覚フィードバック（対応デバイスのみ）
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }
-  };
-
-  const toggleTask = (id) => {
-    setTasks(tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    <!-- PWA設定 -->
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="タスク管理">
     
-    // 触覚フィードバック
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(30);
-    }
-  };
-
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
-    
-    // 触覚フィードバック
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate([50, 50, 50]);
-    }
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'active') return !task.completed;
-    if (filter === 'completed') return task.completed;
-    return true;
-  });
-
-  const completedCount = tasks.filter(task => task.completed).length;
-  const activeCount = tasks.filter(task => !task.completed).length;
-
-  return (
-    <>
-      <style jsx>{`
-        .app-container {
-          min-height: 100vh;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
+    <!-- スタイル -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        .task-item {
-          transition: all 0.3s ease;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+            min-height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        .task-item.completed {
-          transform: scale(0.98);
-          opacity: 0.7;
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .app-icon {
+            width: 3rem;
+            height: 3rem;
+            background: #3B82F6;
+            border-radius: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .online-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+        }
+        
+        .dot.online { background: #10b981; }
+        .dot.offline { background: #ef4444; }
+        
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        
+        .input:focus {
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .btn {
-          transition: all 0.2s ease;
-          cursor: pointer;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
         }
         
         .btn:active {
-          transform: scale(0.95);
+            transform: scale(0.95);
         }
         
-        .install-info {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(10px);
+        .btn-primary {
+            background: #3B82F6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .btn-secondary.active {
+            background: #3B82F6;
+            color: white;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-group .btn {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .task-item {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+        
+        .task-item.completed {
+            opacity: 0.7;
+            transform: scale(0.98);
+        }
+        
+        .task-checkbox {
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .task-checkbox:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        
+        .task-checkbox.completed {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+        }
+        
+        .task-text {
+            flex: 1;
+            font-size: 1rem;
+            color: #1f2937;
+            transition: all 0.2s;
+        }
+        
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #9ca3af;
+        }
+        
+        .task-delete {
+            width: 2rem;
+            height: 2rem;
+            background: #fef2f2;
+            color: #dc2626;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .task-delete:hover {
+            background: #fee2e2;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+        
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .pwa-info {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .pwa-info .icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pwa-info p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .install-instructions {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 0.5rem;
         }
         
         @media (max-width: 640px) {
-          .container {
-            padding: 1rem;
-          }
+            .container {
+                padding: 1rem 0.5rem;
+            }
         }
-      `}</style>
-      
-      <div className="app-container bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container max-w-md mx-auto pt-8 px-4 pb-20">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                <CheckIcon />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-800">タスク管理</h1>
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="app-icon">✓</div>
+            <h1 class="title">タスク管理</h1>
+            <div class="status">
+                <div class="online-indicator">
+                    <div class="dot online" id="online-dot"></div>
+                    <span id="online-text">オンライン</span>
+                </div>
+                <div>
+                    完了: <span id="completed-count">0</span> | 未完了: <span id="active-count">0</span>
+                </div>
             </div>
-            
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-gray-600">{isOnline ? 'オンライン' : 'オフライン'}</span>
-              </div>
-              <div className="text-gray-600">
-                完了: {completedCount} | 未完了: {activeCount}
-              </div>
-            </div>
-          </div>
+        </div>
 
-          {/* Add Task */}
-          <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addTask()}
-                placeholder="新しいタスクを追加..."
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                onClick={addTask}
-                className="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg flex items-center justify-center"
-              >
-                <PlusIcon />
-              </button>
-            </div>
-          </div>
-
-          {/* Filter Buttons */}
-          <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-            <div className="flex gap-2">
-              {[
-                { key: 'all', label: 'すべて' },
-                { key: 'active', label: '未完了' },
-                { key: 'completed', label: '完了済み' }
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key)}
-                  className={`btn flex-1 py-2 px-4 rounded-lg font-medium ${
-                    filter === key
-                      ? 'bg-blue-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+        <!-- Add Task -->
+        <div class="card">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="new-task-input" 
+                    class="input" 
+                    placeholder="新しいタスクを追加..."
                 >
-                  {label}
+                <button class="btn btn-primary" onclick="addTask()">
+                    <span style="font-size: 1.25rem; font-weight: bold;">+</span>
                 </button>
-              ))}
             </div>
-          </div>
+        </div>
 
-          {/* Tasks List */}
-          <div className="space-y-3">
-            {filteredTasks.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-                <div className="text-gray-400 mb-4">
-                  <div className="w-16 h-16 mx-auto flex items-center justify-center text-4xl">
-                    ✓
-                  </div>
-                </div>
-                <p className="text-gray-500">
-                  {filter === 'active' && 'お疲れ様！すべてのタスクが完了しました🎉'}
-                  {filter === 'completed' && '完了したタスクはありません'}
-                  {filter === 'all' && 'タスクがありません。新しいタスクを追加してください。'}
-                </p>
-              </div>
-            ) : (
-              filteredTasks.map(task => (
-                <div
-                  key={task.id}
-                  className={`task-item bg-white rounded-xl shadow-lg p-4 ${
-                    task.completed ? 'completed' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => toggleTask(task.id)}
-                      className={`btn flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                        task.completed
-                          ? 'bg-green-500 text-white shadow-lg'
-                          : 'border-2 border-gray-300 hover:border-green-500 hover:bg-green-50'
-                      }`}
-                    >
-                      {task.completed && <CheckIcon />}
-                    </button>
-                    
-                    <span
-                      className={`flex-1 ${
-                        task.completed
-                          ? 'line-through text-gray-500'
-                          : 'text-gray-800'
-                      }`}
-                    >
-                      {task.text}
-                    </span>
-                    
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="btn flex-shrink-0 w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+        <!-- Filter Buttons -->
+        <div class="card">
+            <div class="filter-group">
+                <button class="btn btn-secondary active" onclick="setFilter('all')">すべて</button>
+                <button class="btn btn-secondary" onclick="setFilter('active')">未完了</button>
+                <button class="btn btn-secondary" onclick="setFilter('completed')">完了済み</button>
+            </div>
+        </div>
 
-          {/* PWA Features Info */}
-          <div className="install-info mt-8 rounded-xl p-4">
-            <div className="text-center">
-              <div className="flex justify-center mb-2">
-                <SmartphoneIcon />
-              </div>
-              <p className="text-gray-600 text-sm">
-                📱 このアプリはオフラインでも動作します<br/>
-                🏠 ホーム画面に追加してアプリとして使用可能
-              </p>
-              <div className="mt-3 text-xs text-gray-500">
+        <!-- Tasks List -->
+        <div id="task-list" class="task-list">
+            <!-- タスクがここに表示されます -->
+        </div>
+
+        <!-- PWA Info -->
+        <div class="pwa-info">
+            <div class="icon">📱</div>
+            <p>このアプリはオフラインでも動作します</p>
+            <p>🏠 ホーム画面に追加してアプリとして使用可能</p>
+            <div class="install-instructions">
                 <p>iPhoneでの追加方法：</p>
                 <p>Safari → 共有ボタン(□↑) → ホーム画面に追加</p>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
-    </>
-  );
-}
+    </div>
+
+    <script>
+        // アプリの状態
+        let tasks = [
+            { id: 1, text: 'PWAアプリを試してみる', completed: false },
+            { id: 2, text: 'ホーム画面に追加する', completed: false }
+        ];
+        let currentFilter = 'all';
+
+        // DOM要素
+        const newTaskInput = document.getElementById('new-task-input');
+        const taskList = document.getElementById('task-list');
+        const completedCount = document.getElementById('completed-count');
+        const activeCount = document.getElementById('active-count');
+        const onlineDot = document.getElementById('online-dot');
+        const onlineText = document.getElementById('online-text');
+
+        // タスクを追加
+        function addTask() {
+            const text = newTaskInput.value.trim();
+            if (text) {
+                const task = {
+                    id: Date.now(),
+                    text: text,
+                    completed: false
+                };
+                tasks.push(task);
+                newTaskInput.value = '';
+                updateUI();
+                
+                // 触覚フィードバック
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+        }
+
+        // タスクの完了状態を切り替え
+        function toggleTask(id) {
+            tasks = tasks.map(task => 
+                task.id === id ? { ...task, completed: !task.completed } : task
+            );
+            updateUI();
+            
+            // 触覚フィードバック
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
+        }
+
+        // タスクを削除
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            updateUI();
+            
+            // 触覚フィードバック
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 50, 50]);
+            }
+        }
+
+        // フィルターを設定
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // フィルターボタンのアクティブ状態を更新
+            document.querySelectorAll('.filter-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateUI();
+        }
+
+        // UIを更新
+        function updateUI() {
+            // カウントを更新
+            const completed = tasks.filter(task => task.completed).length;
+            const active = tasks.filter(task => !task.completed).length;
+            completedCount.textContent = completed;
+            activeCount.textContent = active;
+
+            // タスクリストを更新
+            const filteredTasks = tasks.filter(task => {
+                if (currentFilter === 'active') return !task.completed;
+                if (currentFilter === 'completed') return task.completed;
+                return true;
+            });
+
+            if (filteredTasks.length === 0) {
+                taskList.innerHTML = `
+                    <div class="card empty-state">
+                        <div class="empty-icon">✓</div>
+                        <p>
+                            ${currentFilter === 'active' ? 'お疲れ様！すべてのタスクが完了しました🎉' :
+                              currentFilter === 'completed' ? '完了したタスクはありません' :
+                              'タスクがありません。新しいタスクを追加してください。'}
+                        </p>
+                    </div>
+                `;
+            } else {
+                taskList.innerHTML = filteredTasks.map(task => `
+                    <div class="task-item ${task.completed ? 'completed' : ''}">
+                        <div class="task-checkbox ${task.completed ? 'completed' : ''}" onclick="toggleTask(${task.id})">
+                            ${task.completed ? '✓' : ''}
+                        </div>
+                        <div class="task-text ${task.completed ? 'completed' : ''}">${task.text}</div>
+                        <button class="task-delete" onclick="deleteTask(${task.id})">
+                            🗑
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // オンライン/オフライン状態を監視
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                onlineDot.className = 'dot online';
+                onlineText.textContent = 'オンライン';
+            } else {
+                onlineDot.className = 'dot offline';
+                onlineText.textContent = 'オフライン';
+            }
+        }
+
+        // イベントリスナー
+        newTaskInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // 初期化
+        updateUI();
+        updateOnlineStatus();
+
+        // タッチジェスチャーの改善
+        document.addEventListener('touchstart', function() {}, { passive: true });
+        document.addEventListener('touchmove', function() {}, { passive: true });
+    </script>
+</body>
+</html>
